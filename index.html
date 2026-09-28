@@ -466,10 +466,7 @@ body {
                 FOG ZONE
             </div>
 
-            <div class="map-label bend-label">
-                BLIND BEND
-            </div>
-
+            <div class="value" id="locationA">Haul Road</div>
             <div class="map-label control-label">
                 CONTROLLED HAUL ROAD
             </div>
@@ -619,7 +616,7 @@ body {
             </p>
 
             <div class="action">
-                RECOMMENDED ACTION: SLOW / STOP
+                RECOMMENDED ACTION: <span id="actionText">CONTINUE</span>
             </div>
 
         </div>
@@ -914,28 +911,54 @@ function updateDashboard(
     highRiskCount.innerText =
         risk === "HIGH" ? "1" : "0";
 
+// Alert message + safety action + location
 
-    // Alert message
-    if (risk === "LOW") {
+const actionText =
+    document.getElementById("actionText");
 
-        alertText.innerText =
-            "Normal operating conditions. No immediate safety threat detected.";
+const locationA =
+    document.getElementById("locationA");
 
-    }
 
-    else if (risk === "MEDIUM") {
+if (risk === "LOW") {
 
-        alertText.innerText =
-            "Reduced visibility detected. Vehicle A is entering a fog-affected area.";
+    alertText.innerText =
+        "Normal operating conditions. No immediate safety threat detected.";
 
-    }
+    actionText.innerText =
+        "CONTINUE";
 
-    else {
+    locationA.innerText =
+        "Haul Road";
 
-        alertText.innerText =
-            "Vehicle A is approaching a blind bend under dense fog with reduced separation distance.";
+}
 
-    }
+else if (risk === "MEDIUM") {
+
+    alertText.innerText =
+        "Reduced visibility detected. Vehicle A is entering a fog-affected area.";
+
+    actionText.innerText =
+        "SLOW DOWN";
+
+    locationA.innerText =
+        "Fog-Affected Road";
+
+}
+
+else {
+
+    alertText.innerText =
+        "Vehicle A is approaching a blind bend under dense fog with reduced separation distance.";
+
+    actionText.innerText =
+        "STOP / AVOID";
+
+    locationA.innerText =
+        "Blind Bend";
+
+}
+   
 
 }
 
