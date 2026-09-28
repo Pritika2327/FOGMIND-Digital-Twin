@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOGMIND - Digital Twin</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #0b1220;
+    color: #e8eef7;
+}
+
+.header {
+    background: #111c2e;
+    padding: 18px 25px;
+    border-bottom: 1px solid #26364f;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo h1 {
+    font-size: 25px;
+    letter-spacing: 1px;
+}
+
+.logo p {
+    color: #91a4bd;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.live {
+    background: #123d2b;
+    color: #4cff9a;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 18px;
+    padding: 18px;
+}
+
+.card {
+    background: #111c2e;
+    border: 1px solid #26364f;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.card-title h2 {
+    font-size: 17px;
+}
+
+.badge {
+    background: #1d2c42;
+    color: #9eb2cb;
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+/* DIGITAL TWIN */
+.map {
+    height: 570px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #182438;
+    border: 1px solid #34455f;
+}
+
+.map::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    background-image:
+        linear-gradient(#6d7f95 1px, transparent 1px),
+        linear-gradient(90deg, #6d7f95 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+/* Roads */
+.road {
+    position: absolute;
+    height: 58px;
+    background: #48586c;
+    border: 3px solid #65778d;
+    border-radius: 35px;
+    z-index: 2;
+}
+
+.road::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 25px;
+    border-top: 3px dashed #d5dbe2;
+}
+
+.road1 {
+    width: 78%;
+    left: 8%;
+    top: 180px;
+    transform: rotate(0deg);
+}
+
+.road2 {
+    width: 52%;
+    left: 39%;
+    top: 300px;
+    transform: rotate(70deg);
+}
+
+.road3 {
+    width: 55%;
+    left: 5%;
+    top: 430px;
+    transform: rotate(-18deg);
+}
+
+/* Risk zone */
+.risk-zone {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px dashed #ff5252;
+    background: rgba(255, 60, 60, 0.15);
+    right: 90px;
+    top: 105px;
+    z-index: 3;
+    animation: pulse 1.7s infinite;
+}
+
+.risk-label {
+    position: absolute;
+    right: 92px;
+    top: 78px;
+    z-index: 5;
+    color: #ff6b6b;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,70,70,.4); }
+    70% { box-shadow: 0 0 0 18px rgba(255,70,70,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,70,70,0); }
+}
+
+/* Vehicles */
+.vehicle {
+    position: absolute;
+    z-index: 10;
+    width: 52px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 25px;
+    transition: all 0.8s linear;
+}
+
+.vehicle-label {
+    position: absolute;
+    top: 34px;
+    left: -8px;
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.vehicle-a {
+    left: 14%;
+    top: 193px;
+}
+
+.vehicle-b {
+    left: 62%;
+    top: 193px;
+}
+
+.vehicle-c {
+    left: 35%;
+    top: 420px;
+}
+
+.green {
+    filter: drop-shadow(0 0 7px #38ff88);
+}
+
+.yellow {
+    filter: drop-shadow(0 0 9px #ffd84d);
+}
+
+.red {
+    filter: drop-shadow(0 0 12px #ff4c4c);
+}
+
+/* Map labels */
+.map-label {
+    position: absolute;
+    z-index: 6;
+    background: rgba(10,18,31,.8);
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    color: #b8c7d9;
+}
+
+.mine-label {
+    left: 20px;
+    top: 20px;
+}
+
+.bend-label {
+    right: 105px;
+    top: 235px;
+}
+
+.control-label {
+    left: 25px;
+    bottom: 25px;
+}
+
+/* DASHBOARD */
+.stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.stat {
+    background: #18263a;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.stat small {
+    color: #8296b0;
+    display: block;
+    font-size: 11px;
+}
+
+.stat strong {
+    display: block;
+    font-size: 22px;
+    margin-top: 4px;
+}
+
+.vehicle-panel {
+    background: #18263a;
+    padding: 14px;
+    border-radius: 9px;
+    margin-top: 10px;
+}
+
+.vehicle-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.vehicle-header strong {
+    font-size: 15px;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.status-low {
+    background: #123d2b;
+    color: #4cff9a;
+}
+
+.status-medium {
+    background: #493c10;
+    color: #ffd84d;
+}
+
+.status-high {
+    background: #4a1c1c;
+    color: #ff6868;
+}
+
+.data {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.data div {
+    background: #202f44;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.data span {
+    display: block;
+    color: #8094ad;
+    font-size: 10px;
+}
+
+.data b {
+    font-size: 13px;
+}
+
+.alert {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 9px;
+    background: #421b1b;
+    border: 1px solid #793838;
+}
+
+.alert h3 {
+    color: #ff6868;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.alert p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #d9bcbc;
+}
+
+.action {
+    margin-top: 9px;
+    background: #ff4444;
+    color: white;
+    padding: 9px;
+    text-align: center;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.legend {
+    display: flex;
+    gap: 15px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: #aab8c8;
+}
+
+.legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-green { background: #39ff88; }
+.dot-yellow { background: #ffd84d; }
+.dot-red { background: #ff4c4c; }
+
+.bottom {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+}
+
+.info-box {
+    background: #111c2e;
+    border: 1px solid #26364f;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.info-box h3 {
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.info-box p {
+    color: #91a4bd;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media(max-width: 900px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+
+    .bottom {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="logo">
+        <h1>FOGMIND</h1>
+        <p>Real-Time Mine Vehicle Safety & Digital Twin</p>
+    </div>
+
+    <div class="live">● SYSTEM LIVE</div>
+</header>
+
+
+<div class="container">
+
+    <!-- DIGITAL TWIN -->
+    <section class="card">
+
+        <div class="card-title">
+            <h2>🗺️ Mine Digital Twin</h2>
+            <span class="badge">LIVE SIMULATION</span>
+        </div>
+
+        <div class="map">
+
+            <div class="map-label mine-label">
+                OPEN CAST IRON ORE MINE
+            </div>
+
+            <div class="road road1"></div>
+            <div class="road road2"></div>
+            <div class="road road3"></div>
+
+            <div class="risk-zone"></div>
+
+            <div class="risk-label">
+                ⚠ HIGH-RISK<br>
+                FOG ZONE
+            </div>
+
+            <div class="map-label bend-label">
+                BLIND BEND
+            </div>
+
+            <div class="map-label control-label">
+                CONTROLLED HAUL ROAD
+            </div>
+
+            <!-- Vehicle A -->
+            <div id="vehicleA" class="vehicle vehicle-a green">
+                🚛
+                <div class="vehicle-label">Vehicle A</div>
+            </div>
+
+            <!-- Vehicle B -->
+            <div id="vehicleB" class="vehicle vehicle-b green">
+                🚛
+                <div class="vehicle-label">Vehicle B</div>
+            </div>
+
+            <!-- Vehicle C -->
+            <div id="vehicleC" class="vehicle vehicle-c yellow">
+                🚛
+                <div class="vehicle-label">Vehicle C</div>
+            </div>
+
+        </div>
+
+        <div class="legend">
+            <span><i class="dot dot-green"></i> Low Risk</span>
+            <span><i class="dot dot-yellow"></i> Medium Risk</span>
+            <span><i class="dot dot-red"></i> High Risk</span>
+        </div>
+
+    </section>
+
+
+    <!-- CONTROL ROOM -->
+    <section class="card">
+
+        <div class="card-title">
+            <h2>🎛️ Control Room</h2>
+            <span class="badge">FOGMIND</span>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <small>ACTIVE VEHICLES</small>
+                <strong>3</strong>
+            </div>
+
+            <div class="stat">
+                <small>HIGH RISK</small>
+                <strong id="highRiskCount">1</strong>
+            </div>
+
+            <div class="stat">
+                <small>VISIBILITY</small>
+                <strong id="visibility">4 m</strong>
+            </div>
+
+            <div class="stat">
+                <small>FOG STATUS</small>
+                <strong id="fogStatus">DENSE</strong>
+            </div>
+        </div>
+
+
+        <!-- Vehicle A -->
+        <div class="vehicle-panel">
+
+            <div class="vehicle-header">
+                <strong>🚛 Vehicle A</strong>
+                <span id="riskBadgeA" class="status status-high">
+                    HIGH RISK
+                </span>
+            </div>
+
+            <div class="data">
+
+                <div>
+                    <span>Speed</span>
+                    <b id="speedA">25 km/h</b>
+                </div>
+
+                <div>
+                    <span>Distance</span>
+                    <b id="distanceA">12 m</b>
+                </div>
+
+                <div>
+                    <span>Visibility</span>
+                    <b id="visA">4 m</b>
+                </div>
+
+                <div>
+                    <span>Location</span>
+                    <b>Blind Bend</b>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Vehicle B -->
+        <div class="vehicle-panel">
+
+            <div class="vehicle-header">
+                <strong>🚛 Vehicle B</strong>
+                <span class="status status-low">
+                    LOW RISK
+                </span>
+            </div>
+
+            <div class="data">
+
+                <div>
+                    <span>Speed</span>
+                    <b>15 km/h</b>
+                </div>
+
+                <div>
+                    <span>Distance</span>
+                    <b>50 m</b>
+                </div>
+
+                <div>
+                    <span>Visibility</span>
+                    <b>20 m</b>
+                </div>
+
+                <div>
+                    <span>Location</span>
+                    <b>Haul Road</b>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Alert -->
+        <div class="alert">
+
+            <h3>🚨 ACTIVE SAFETY ALERT</h3>
+
+            <p id="alertText">
+                Vehicle A is approaching a blind bend
+                under dense fog conditions.
+            </p>
+
+            <div class="action">
+                RECOMMENDED ACTION: SLOW / STOP
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- INFORMATION -->
+    <div class="bottom">
+
+        <div class="info-box">
+            <h3>📡 IoT Monitoring</h3>
+            <p>
+                Vehicle and environmental information is
+                continuously collected and made available
+                to the monitoring system.
+            </p>
+        </div>
+
+        <div class="info-box">
+            <h3>🧠 Risk Intelligence</h3>
+            <p>
+                Visibility, speed, vehicle proximity and
+                road context are combined to determine
+                the current safety risk.
+            </p>
+        </div>
+
+        <div class="info-box">
+            <h3>🌐 Digital Twin</h3>
+            <p>
+                The mine environment is represented
+                digitally so operators can understand
+                vehicle positions, hazards and risk zones
+                in real time.
+            </p>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/*
+    FOGMIND PROTOTYPE
+    -----------------
+    This version uses simulated sensor/GPS values.
+
+    Later:
+    ESP32 → IoT → Real sensor data → Risk/ML model → Digital Twin
+*/
+
+
+let step = 0;
+
+function updateSimulation() {
+
+    const vehicleA = document.getElementById("vehicleA");
+
+    const riskBadge = document.getElementById("riskBadgeA");
+
+    const visibility = document.getElementById("visibility");
+
+    const fogStatus = document.getElementById("fogStatus");
+
+    const speed = document.getElementById("speedA");
+
+    const distance = document.getElementById("distanceA");
+
+    const vis = document.getElementById("visA");
+
+    const alertText = document.getElementById("alertText");
+
+    if (step === 0) {
+
+        vehicleA.style.left = "14%";
+        vehicleA.style.top = "193px";
+
+        vehicleA.className = "vehicle vehicle-a green";
+
+        visibility.innerText = "20 m";
+        fogStatus.innerText = "CLEAR";
+
+        speed.innerText = "15 km/h";
+        distance.innerText = "50 m";
+        vis.innerText = "20 m";
+
+        riskBadge.innerText = "LOW RISK";
+        riskBadge.className = "status status-low";
+
+        alertText.innerText =
+            "Normal operating conditions. No immediate safety threat detected.";
+
+    }
+
+    else if (step === 1) {
+
+        vehicleA.style.left = "35%";
+        vehicleA.style.top = "193px";
+
+        vehicleA.className = "vehicle vehicle-a yellow";
+
+        visibility.innerText = "8 m";
+        fogStatus.innerText = "MODERATE";
+
+        speed.innerText = "20 km/h";
+        distance.innerText = "30 m";
+        vis.innerText = "8 m";
+
+        riskBadge.innerText = "MEDIUM RISK";
+        riskBadge.className = "status status-medium";
+
+        alertText.innerText =
+            "Reduced visibility detected. Vehicle A is entering a fog-affected area.";
+
+    }
+
+    else {
+
+        vehicleA.style.left = "62%";
+        vehicleA.style.top = "193px";
+
+        vehicleA.className = "vehicle vehicle-a red";
+
+        visibility.innerText = "4 m";
+        fogStatus.innerText = "DENSE";
+
+        speed.innerText = "25 km/h";
+        distance.innerText = "12 m";
+        vis.innerText = "4 m";
+
+        riskBadge.innerText = "HIGH RISK";
+        riskBadge.className = "status status-high";
+
+        alertText.innerText =
+            "Vehicle A is approaching a blind bend under dense fog with reduced separation distance.";
+    }
+
+    step++;
+
+    if (step > 2) {
+        step = 0;
+    }
+}
+
+
+/* Update the simulation every 4 seconds */
+setInterval(updateSimulation, 4000);
+
+</script>
+
+</body>
+</html>
