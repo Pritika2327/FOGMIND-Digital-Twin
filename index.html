@@ -673,66 +673,257 @@ body {
     Later:
     ESP32 → IoT → Real sensor data → Risk/ML model → Digital Twin
 */
+// ===============================
+// FOGMIND ML RISK ENGINE
+// ===============================
+
+// Prototype training examples
+// [visibility, speed, distance, blindBend]
+
+const trainingData = [
+
+    // LOW RISK
+    { x: [20, 15, 50, 0], label: "LOW" },
+    { x: [25, 10, 60, 0], label: "LOW" },
+    { x: [15, 18, 40, 0], label: "LOW" },
+
+    // MEDIUM RISK
+    { x: [10, 20, 35, 0], label: "MEDIUM" },
+    { x: [8, 20, 30, 0], label: "MEDIUM" },
+    { x: [7, 18, 25, 1], label: "MEDIUM" },
+
+    // HIGH RISK
+    { x: [5, 22, 20, 1], label: "HIGH" },
+    { x: [4, 25, 12, 1], label: "HIGH" },
+    { x: [3, 30, 8, 1], label: "HIGH" }
+];
 
 
-let step = 0;
+// Normalize values
+const featureMin = [3, 10, 8, 0];
+const featureMax = [25, 30, 60, 1];
 
-function updateSimulation() {
+function normalize(values) {
 
-    const vehicleA = document.getElementById("vehicleA");
+    return values.map((value, i) => {
 
-    const riskBadge = document.getElementById("riskBadgeA");
+        return (value - featureMin[i]) /
+               (featureMax[i] - featureMin[i]);
 
-    const visibility = document.getElementById("visibility");
+    });
 
-    const fogStatus = document.getElementById("fogStatus");
+}
 
-    const speed = document.getElementById("speedA");
 
-    const distance = document.getElementById("distanceA");
+// Calculate distance
+function distance(a, b) {
 
-    const vis = document.getElementById("visA");
+    let total = 0;
 
-    const alertText = document.getElementById("alertText");
+    for (let i = 0; i < a.length; i++) {
 
-    if (step === 0) {
+        total += Math.pow(a[i] - b[i], 2);
 
-        vehicleA.style.left = "14%";
-        vehicleA.style.top = "193px";
+    }
 
-        vehicleA.className = "vehicle vehicle-a green";
+    return Math.sqrt(total);
+}
 
-        visibility.innerText = "20 m";
+
+// KNN prediction
+function predictRisk(inputValues) {
+
+    const input = normalize(inputValues);
+
+    const results = trainingData.map(sample => {
+
+        return {
+            label: sample.label,
+            distance: distance(
+                input,
+                normalize(sample.x)
+            )
+        };
+
+    });
+
+    results.sort(
+        (a, b) => a.distance - b.distance
+    );
+
+    // Take 3 nearest examples
+    const nearest = results.slice(0, 3);
+
+    const votes = {
+        LOW: 0,
+        MEDIUM: 0,
+        HIGH: 0
+    };
+
+    nearest.forEach(item => {
+        votes[item.label]++;
+    });
+
+    if (
+        votes.HIGH >= votes.MEDIUM &&
+        votes.HIGH >= votes.LOW
+    ) {
+        return "HIGH";
+    }
+
+    if (votes.MEDIUM >= votes.LOW) {
+        return "MEDIUM";
+    }
+
+    return "LOW";
+}
+
+
+// Change vehicle colour
+function updateVehicleColour(vehicle, risk) {
+
+    vehicle.className = "vehicle vehicle-a";
+
+    if (risk === "LOW") {
+        vehicle.classList.add("green");
+    }
+
+    else if (risk === "MEDIUM") {
+        vehicle.classList.add("yellow");
+    }
+
+    else {
+        vehicle.classList.add("red");
+    }
+}
+
+
+// Update dashboard
+function updateDashboard(
+    visibilityValue,
+    speedValue,
+    distanceValue,
+    blindBend
+) {
+
+    const vehicle =
+        document.getElementById("vehicleA");
+
+    const riskBadge =
+        document.getElementById("riskBadgeA");
+
+    const visibility =
+        document.getElementById("visibility");
+
+    const fogStatus =
+        document.getElementById("fogStatus");
+
+    const speed =
+        document.getElementById("speedA");
+
+    const distanceValueElement =
+        document.getElementById("distanceA");
+
+    const visibilityVehicle =
+        document.getElementById("visA");
+
+    const alertText =
+        document.getElementById("alertText");
+
+    const highRiskCount =
+        document.getElementById("highRiskCount");
+
+
+    // ML prediction
+    const risk = predictRisk([
+        visibilityValue,
+        speedValue,
+        distanceValue,
+        blindBend ? 1 : 0
+    ]);
+
+
+    // Update sensor values
+    visibility.innerText =
+        visibilityValue + " m";
+
+    speed.innerText =
+        speedValue + " km/h";
+
+    distanceValueElement.innerText =
+        distanceValue + " m";
+
+    visibilityVehicle.innerText =
+        visibilityValue + " m";
+
+
+    // Fog status
+    if (visibilityValue >= 15) {
+
         fogStatus.innerText = "CLEAR";
 
-        speed.innerText = "15 km/h";
-        distance.innerText = "50 m";
-        vis.innerText = "20 m";
+    }
 
-        riskBadge.innerText = "LOW RISK";
-        riskBadge.className = "status status-low";
+    else if (visibilityValue >= 7) {
+
+        fogStatus.innerText = "MODERATE";
+
+    }
+
+    else {
+
+        fogStatus.innerText = "DENSE";
+
+    }
+
+
+    // Risk badge
+    riskBadge.innerText =
+        risk + " RISK";
+
+    riskBadge.className = "status";
+
+
+    if (risk === "LOW") {
+
+        riskBadge.classList.add("status-low");
+
+    }
+
+    else if (risk === "MEDIUM") {
+
+        riskBadge.classList.add("status-medium");
+
+    }
+
+    else {
+
+        riskBadge.classList.add("status-high");
+
+    }
+
+
+    // Change vehicle colour
+    updateVehicleColour(
+        vehicle,
+        risk
+    );
+
+
+    // High-risk count
+    highRiskCount.innerText =
+        risk === "HIGH" ? "1" : "0";
+
+
+    // Alert message
+    if (risk === "LOW") {
 
         alertText.innerText =
             "Normal operating conditions. No immediate safety threat detected.";
 
     }
 
-    else if (step === 1) {
-
-        vehicleA.style.left = "35%";
-        vehicleA.style.top = "193px";
-
-        vehicleA.className = "vehicle vehicle-a yellow";
-
-        visibility.innerText = "8 m";
-        fogStatus.innerText = "MODERATE";
-
-        speed.innerText = "20 km/h";
-        distance.innerText = "30 m";
-        vis.innerText = "8 m";
-
-        riskBadge.innerText = "MEDIUM RISK";
-        riskBadge.className = "status status-medium";
+    else if (risk === "MEDIUM") {
 
         alertText.innerText =
             "Reduced visibility detected. Vehicle A is entering a fog-affected area.";
@@ -741,35 +932,111 @@ function updateSimulation() {
 
     else {
 
-        vehicleA.style.left = "62%";
-        vehicleA.style.top = "193px";
-
-        vehicleA.className = "vehicle vehicle-a red";
-
-        visibility.innerText = "4 m";
-        fogStatus.innerText = "DENSE";
-
-        speed.innerText = "25 km/h";
-        distance.innerText = "12 m";
-        vis.innerText = "4 m";
-
-        riskBadge.innerText = "HIGH RISK";
-        riskBadge.className = "status status-high";
-
         alertText.innerText =
             "Vehicle A is approaching a blind bend under dense fog with reduced separation distance.";
+
     }
 
-    step++;
-
-    if (step > 2) {
-        step = 0;
-    }
 }
 
 
-/* Update the simulation every 4 seconds */
-setInterval(updateSimulation, 4000);
+// ===============================
+// DEMONSTRATION SCENARIOS
+// ===============================
+
+const scenarios = [
+
+    // NORMAL
+    {
+        visibility: 20,
+        speed: 15,
+        distance: 50,
+        blindBend: false,
+        left: "14%",
+        top: "193px"
+    },
+
+    // FOG
+    {
+        visibility: 8,
+        speed: 20,
+        distance: 30,
+        blindBend: false,
+        left: "35%",
+        top: "193px"
+    },
+
+    // DANGER
+    {
+        visibility: 4,
+        speed: 25,
+        distance: 12,
+        blindBend: true,
+        left: "62%",
+        top: "193px"
+    }
+
+];
+
+
+let scenarioIndex = 0;
+
+
+// Run one scenario
+function runSimulation() {
+
+    const scenario =
+        scenarios[scenarioIndex];
+
+    const vehicle =
+        document.getElementById("vehicleA");
+
+
+    // Move vehicle on Digital Twin
+    vehicle.style.left =
+        scenario.left;
+
+    vehicle.style.top =
+        scenario.top;
+
+
+    // Run ML + update dashboard
+    updateDashboard(
+
+        scenario.visibility,
+
+        scenario.speed,
+
+        scenario.distance,
+
+        scenario.blindBend
+
+    );
+
+
+    // Move to next scenario
+    scenarioIndex++;
+
+    if (
+        scenarioIndex >= scenarios.length
+    ) {
+
+        scenarioIndex = 0;
+
+    }
+
+}
+
+
+// Start immediately
+runSimulation();
+
+
+// Change scenario every 4 seconds
+setInterval(
+    runSimulation,
+    4000
+);
 
 </script>
 
